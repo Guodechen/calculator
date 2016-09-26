@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>计算器</title>
+    <style type="text/css" media="screen">
+    * {
+        margin: 0;
+        padding: 0;
+    }
+    
+    input {
+        width: 298px;
+        display: block;
+        height: 25px;
+        font-size: 18px;
+    }
+    
+    center {
+        margin-top: 10%;
+    }
+    
+    button {
+        width: 74px;
+        height: 72px;
+        padding: 2px;
+        margin: -1px;
+        font-size: 20px;
+    }
+    
+    .btn {
+        width: 300px;
+        height: 360px;
+    }
+    
+    .equal {
+        width: 148px;
+        padding: 2px 4px;
+    }
+    </style>
+</head>
+
+<body>
+    <center>
+        <input type="text" id="input">
+        <input type="text" id="output" disabled="disabled">
+        <input type="text" id="count" disabled="disabled">
+        <div class="btn">
+            <button type="button" onclick="eventObj(event)">+</button>
+            <button type="button" onclick="eventObj(event)">-</button>
+            <button type="button" onclick="eventObj(event)">*</button>
+            <button type="button" onclick="eventObj(event)">/</button>
+            <button type="button" onclick="eventObj(event)">1</button>
+            <button type="button" onclick="eventObj(event)">2</button>
+            <button type="button" onclick="eventObj(event)">3</button>
+            <button type="button" onclick="eventObj(event)">(</button>
+            <button type="button" onclick="eventObj(event)">4</button>
+            <button type="button" onclick="eventObj(event)">5</button>
+            <button type="button" onclick="eventObj(event)">6</button>
+            <button type="button" onclick="eventObj(event)">)</button>
+            <button type="button" onclick="eventObj(event)">7</button>
+            <button type="button" onclick="eventObj(event)">8</button>
+            <button type="button" onclick="eventObj(event)">9</button>
+            <button type="button" onclick="eventObj(event)">C</button>
+            <button type="button" onclick="eventObj(event)">.</button>
+            <button type="button" onclick="eventObj(event)">0</button>
+            <button type="button" class="equal" onclick="eventObj(event)">=</button>
+        </div>
+    </center>
+    <script type="text/javascript">
+    function Stack() { //定义栈
+        this.dataStore = []
+        this.top = 0
+        this.push = push
+        this.pop = pop
+        this.peek = peek
+        this.length = length
+        this.clear = clear
+    }
+
+    function push(element) {
+        this.dataStore[this.top++] = element
+    }
+
+    function pop() {
+        return this.dataStore[--this.top]
+    }
+
+    function length() {
+        return this.top
+    }
+
+    function clear() {
+        this.top = 0
+    }
+
+    function peek() {
+        return this.dataStore[this.top - 1]
+    }
+
+    var optReg = /[\+\-\*\/\(\)]/
+
+    var input = document.getElementById('input')
+    var output = document.getElementById('output')
+    var count = document.getElementById('count')
+    var button = document.getElementsByTagName('button')
+    var pos = 0
+    var contactNum = ''
+    var n = new Stack()
+    input.onblur = function() {
+        toCount()
+    }
+
+    function eventObj(event) {
+        var whe = event.target
+        if (whe.innerHTML == '=') {
+            toCount()
+            contactNum = ''
+        } else if (whe.innerHTML == 'C') {
+            input.value = ''
+            output.value = ''
+            count.value = ''
+            contactNum = ''
+        } else {
+            contactNum += whe.innerHTML
+            input.value = contactNum
+        }
+    }
+    //计算函数
+    function toCount() {
+        value = input.value.slice('')
+        if (value.length == 0) {
+            output.value = ''
+            count.value = ''
+        } else {
+            var container = ''
+            for (pos; pos < value.length; pos++) {
+                while (value[pos] == ' ') {
+                    pos++
+                }
+                var num = isNumber(value)
+                container += num //拼接现有的数字在同一个表达式中
+                while (value[pos] == ' ') { //清空空格
+                    pos++
+                }
+                var opt = isOpt(value) //只返回一个操作数
+                container += opt
+            }
+            while (n.length() > 0) {
+                // console.log(n.peek())
+                if (n.peek() == undefined) {
+                    n.pop()
+                } else {
+                    container += n.pop()
+                }
+            }
+            pos = 0
+            n.clear()
+            container = standardOut(container)
+            output.value = '后缀表达式为： ' + container
+            count.value = '计算值为： ' + countNum(container)
+        }
+    }
+    //返回连续的数字和小数（还没有判断小数点中是不是有多个.要改进）
+    function isNumber(value) {
+        var numReg = /[\d.]/
+        var converted = ''
+        for (pos; pos < value.length; pos++) {
+            if (numReg.test(value[pos])) {
+                converted += value[pos]
+            } else {
+                break
+            }
+        }
+        converted += ' '
+        return converted
+    }
+
+    //+-*/()的进栈出栈
+    function isOpt(value) {
+        var converted = ''
+        if (n.length() == 0) {
+            n.push(value[pos])
+        } else {
+            //遇到)括号时
+            if (value[pos] == ')') {
+                while (n.length() > 0) {
+                    if (n.peek() == '(') {
+                        n.pop()
+                        break
+                    } else {
+                        converted += n.pop()
+                    }
+                }
+                //遇到+-而栈里面是+-时
+            } else if ((value[pos] == '+' || value[pos] == '-') && (n.peek() == '+' || n.peek() == '-')) {
+                converted += n.pop()
+                n.push(value[pos])
+                    //遇到*/而栈里面是*/时
+            } else if ((value[pos] == '*' || value[pos] == '/') && (n.peek() == '*' || n.peek() == '/')) {
+                converted += n.pop()
+                n.push(value[pos])
+                    //遇到+-而栈里面是/*时
+            } else if ((value[pos] == '+' || value[pos] == '-') && (n.peek() == '*' || n.peek() == '/')) {
+                converted += n.pop()
+                if (n.peek() == '+' || n.peek() == '-') {
+                    converted += n.pop()
+                    n.push(value[pos])
+                }
+                if (n.peek() == '(' || n.peek() == undefined) {
+                    n.push(value[pos])
+                }
+            }
+            //其他情况
+            else {
+                if (pos < value.length) {
+                    n.push(value[pos])
+                }
+            }
+        }
+        // console.log(converted)
+        return converted
+    }
+
+    function standardOut(value) {
+        var regexp = /[\+\-\*\/]/
+        converted = ''
+        values = value.slice()
+        for (var i = 0; i < value.length; i++) {
+            if (values[i] == ' ' && values[i + 1] == ' ') {
+                i++
+            }
+            if (regexp.test(values[i]) && values[i + 1] != ' ') {
+                converted = converted + values[i] + ' '
+            } else {
+                converted += values[i]
+            }
+        }
+        return converted
+    }
+    //将后缀表达式转化成值
+    function countNum(value) {
+        var count = new Stack()
+        var regexp = /[\+\-\*\/]/
+        var num1
+        var num2
+        var res
+        for (var i = 0; i < value.length; i++) {
+            while (value[i] == ' ') {
+                i++
+            }
+            if (value[i] == undefined) {
+                continue
+            }
+            if (regexp.test(value[i]) == false) {
+                if (value[i + 1] != ' ') {
+                    var contact = ''
+                    while (value[i] != ' ') {
+                        contact += value[i]
+                        i++
+                    }
+                    count.push(contact)
+                } else {
+                    count.push(value[i])
+                }
+            } else {
+                switch (value[i]) {
+                    case '+':
+                        num1 = count.pop()
+                        num2 = count.pop()
+                        res = (+num1) + (+num2)
+                        count.push(res)
+                        break
+                    case '-':
+                        num1 = count.pop()
+                        num2 = count.pop()
+                        res = num2 - num1
+                        count.push(res)
+                        break
+                    case '*':
+                        num1 = count.pop()
+                        num2 = count.pop()
+                        res = num1 * num2
+                        count.push(res)
+                        break
+                    case '/':
+                        num1 = count.pop()
+                        num2 = count.pop()
+                        res = num2 / num1
+                        count.push(res)
+                        break
+                }
+            }
+        }
+        return count.pop()
+    }
+    </script>
+</body>
+
+</html>
